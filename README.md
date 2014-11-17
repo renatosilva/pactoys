@@ -17,5 +17,5 @@ repman --list
 
 ## License and copyright
 
-Copyright (c) 2014 Renato Silva.
+Copyright (c) 2014 Renato Silva and others.
 Licensed under the terms of the GNU GPL version 2 or later.

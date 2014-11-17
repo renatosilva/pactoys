@@ -1,6 +1,6 @@
 /*
  * Pacman Repository Manager 2014.11.16
- * Copyright (C) 2014 Renato Silva
+ * Copyright (C) 2014 Renato Silva, David Macek
  * Licensed under GNU GPLv2 or later
  *
  * This is a prototype for a native C implementation. Currently it just lists
