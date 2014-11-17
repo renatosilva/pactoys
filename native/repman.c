@@ -21,10 +21,43 @@ typedef struct {
     const char* name;
     const char* url;
     const char* siglevel;
+    bool remove;
 } simple_repository;
 
 simple_repository repositories[MAX_REPOSITORIES];
 int repo_index;
+
+static int write_repositories() {
+    FILE* ini = fopen(CONFIG_FILE, "w");
+    if (ini == NULL)
+        return true;
+    for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
+        if (!repositories[repo_index].remove) {
+            fprintf(ini, "[%s]\n", repositories[repo_index].name);
+            fprintf(ini, "Server = %s\n", repositories[repo_index].url);
+            fprintf(ini, "SigLevel = %s\n", repositories[repo_index].siglevel);
+            fprintf(ini, "\n");
+        }
+    fclose(ini);
+    return false;
+}
+
+static void remove_repository(const char* name) {
+    for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
+        if (0 == strcmp(name, repositories[repo_index].name)) {
+            repositories[repo_index].remove = true;
+            return;
+        }
+}
+
+static void add_repository(const char* name, const char* url, const char* siglevel) {
+    for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
+        ;
+    repositories[repo_index].name = strdup(name);
+    repositories[repo_index].url = strdup(url);
+    repositories[repo_index].siglevel = strdup(siglevel);
+    repo_index++;
+}
 
 static int parse_repositories(void* data, const char* section, const char* name, const char* value) {
     if (strcmp(name, "Server") == 0) {
@@ -51,5 +84,9 @@ int main(int argc, char** argv) {
             repositories[repo_index].name,
             repositories[repo_index].url,
             repositories[repo_index].siglevel);
+    if (write_repositories() < 0) {
+        printf("Could not write %s.\n", CONFIG_FILE);
+        return EXIT_FAILURE;
+    }
     return EXIT_SUCCESS;
 }
