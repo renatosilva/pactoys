@@ -27,10 +27,10 @@ typedef struct {
 simple_repository repositories[MAX_REPOSITORIES];
 int repo_index;
 
-static int write_repositories() {
+static bool write_repositories() {
     FILE* ini = fopen(CONFIG_FILE, "w");
     if (ini == NULL)
-        return true;
+        return false;
     for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
         if (!repositories[repo_index].remove) {
             fprintf(ini, "[%s]\n", repositories[repo_index].name);
@@ -39,7 +39,7 @@ static int write_repositories() {
             fprintf(ini, "\n");
         }
     fclose(ini);
-    return false;
+    return true;
 }
 
 static void remove_repository(const char* name) {
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
             repositories[repo_index].name,
             repositories[repo_index].url,
             repositories[repo_index].siglevel);
-    if (write_repositories() < 0) {
+    if (!write_repositories()) {
         printf("Could not write %s.\n", CONFIG_FILE);
         return EXIT_FAILURE;
     }
