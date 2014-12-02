@@ -2,7 +2,7 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 2014.11.17
+##     Pacman Repository Manager 2014.12.2
 ##     Copyright (c) 2014 Renato Silva
 ##     Licensed under GNU GPLv2 or later
 ##
@@ -18,10 +18,11 @@
 $0 = __FILE__
 require 'inifile'
 require 'easyoptions'
+options = EasyOptions.options
 
-repository_name = ($options[:add] or $options[:remove])
-finish '--url is required' if $options[:add] and not $options[:url]
-finish 'cannot add and remove repository at the same time' if $options[:add] and $options[:remove]
+repository_name = (options[:add] or options[:remove])
+EasyOptions.finish '--url is required' if options[:add] and not options[:url]
+EasyOptions.finish 'cannot add and remove repository at the same time' if options[:add] and options[:remove]
 
 pacman_file = '/etc/pacman.conf'
 config_file = '/etc/pacman.d/repman.conf'
@@ -33,12 +34,12 @@ begin
         file.puts("\nInclude = #{config_file}")
     end if not File.readlines(pacman_file).grep(include_regex).any?
 rescue
-    finish "could not check #{pacman_file}"
+    EasyOptions.finish "could not check #{pacman_file}"
 end
 
-if $options[:add] then
+if options[:add] then
     config[repository_name] = {
-        'Server'   => $options[:url],
+        'Server'   => options[:url],
         'SigLevel' => 'Optional'
     }
     config.write
@@ -46,16 +47,16 @@ if $options[:add] then
     exit
 end
 
-if $options[:remove] then
+if options[:remove] then
     repository = config[repository_name]
-    finish "could not find repository #{repository_name}" if not repository or repository.empty?
+    EasyOptions.finish "could not find repository #{repository_name}" if not repository or repository.empty?
     config.delete_section(repository_name)
     config.write
     system('pacman --sync --refresh')
     exit
 end
 
-if $options[:list] then
+if options[:list] then
     config.each_section do |repository_name|
         repository = config[repository_name]
         puts repository_name
