@@ -9,7 +9,7 @@
 #define NAME         "Pacman Repository Manager"
 #define COPYRIGHT    "Copyright (C) 2014 Renato Silva, David Macek"
 #define LICENSE      "Licensed under GNU GPLv2 or later"
-#define VERSION      "2014.12.1"
+#define VERSION      "2014.12.2"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \
@@ -29,6 +29,20 @@ typedef struct {
 simple_repository repositories[MAX_REPOSITORIES];
 int repo_index;
 
+static int parse_repositories(void* data, const char* section, const char* name, const char* value) {
+    if (strcmp(name, "Server") == 0) {
+        repositories[repo_index].url = strdup(value);
+    } else if (strcmp(name, "SigLevel") == 0) {
+        repositories[repo_index].siglevel = strdup(value);
+    } else
+        return false;
+    if (repositories[repo_index].url != NULL && repositories[repo_index].siglevel != NULL) {
+        repositories[repo_index].name = strdup(section);
+        repo_index++;
+    }
+    return true;
+}
+
 static bool write_repositories() {
     FILE* ini = fopen(CONFIG_FILE, "w");
     if (ini == NULL)
@@ -44,15 +58,6 @@ static bool write_repositories() {
     return true;
 }
 
-static bool remove_repository(const char* name) {
-    for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
-        if (0 == strcmp(name, repositories[repo_index].name)) {
-            repositories[repo_index].remove = true;
-            return true;
-        }
-    return false;
-}
-
 static void add_repository(const char* name, const char* url, const char* siglevel) {
     for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
         if (0 == strcmp(name, repositories[repo_index].name))
@@ -62,18 +67,13 @@ static void add_repository(const char* name, const char* url, const char* siglev
     repositories[repo_index].siglevel = strdup(siglevel);
 }
 
-static int parse_repositories(void* data, const char* section, const char* name, const char* value) {
-    if (strcmp(name, "Server") == 0) {
-        repositories[repo_index].url = strdup(value);
-    } else if (strcmp(name, "SigLevel") == 0) {
-        repositories[repo_index].siglevel = strdup(value);
-    } else
-        return false;
-    if (repositories[repo_index].url != NULL && repositories[repo_index].siglevel != NULL) {
-        repositories[repo_index].name = strdup(section);
-        repo_index++;
-    }
-    return true;
+static bool remove_repository(const char* name) {
+    for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
+        if (0 == strcmp(name, repositories[repo_index].name)) {
+            repositories[repo_index].remove = true;
+            return true;
+        }
+    return false;
 }
 
 static void list_repositories() {
