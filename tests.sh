@@ -15,40 +15,29 @@ if [[ -t 1 ]]; then
     normal_color="\e[0m"
 fi
 
-native_tests=("repman.exe"
-              "repman.exe list"
-              "repman.exe add renatosilva http://renatosilva.me/msys2"
-              "repman.exe list"
-              "pacman --sync --list renatosilva"
-              "repman.exe remove renatosilva"
-              "repman.exe list"
-              "repman.exe add"
-              "repman.exe add renatosilva"
-              "repman.exe remove renatosilva"
-              "repman.exe list extra arguments"
-              "repman.exe hello")
+runtest() {
+    for test in "${tests[@]}"; do
+        command="${test%%::*}"
+        arguments="${test#*::}"
+        [[ "$command" = repman ]] && command="$2"
+        echo -e "${1}\$ ${command} ${arguments}${normal_color}"
+        $command $arguments
+        echo
+    done
+}
 
-ruby_tests=("ruby /usr/bin/repman --help"
-            "ruby /usr/bin/repman --list"
-            "ruby /usr/bin/repman --add renatosilva --url http://renatosilva.me/msys2"
-            "ruby /usr/bin/repman --list"
-            "pacman --sync --list renatosilva"
-            "ruby /usr/bin/repman --remove renatosilva"
-            "ruby /usr/bin/repman --list"
-            "ruby /usr/bin/repman --add"
-            "ruby /usr/bin/repman --add renatosilva"
-            "ruby /usr/bin/repman --remove renatosilva"
-            "ruby /usr/bin/repman --list extra arguments"
-            "ruby /usr/bin/repman --hello")
+tests=(repman::
+       repman::"list"
+       repman::"add renatosilva http://renatosilva.me/msys2"
+       repman::"list"
+       pacman::"--sync --list renatosilva"
+       repman::"remove renatosilva"
+       repman::"list"
+       repman::"add"
+       repman::"add renatosilva"
+       repman::"remove renatosilva"
+       repman::"list extra arguments"
+       repman::"hello")
 
-for test in "${native_tests[@]}"; do
-    echo -e "${green_color}\$ $test${normal_color}"
-    $test
-    echo
-done
-
-for test in "${ruby_tests[@]}"; do
-    echo -e "${purple_color}\$ $test${normal_color}"
-    $test
-    echo
-done
+runtest "${green_color}"  "repman.exe"
+runtest "${purple_color}" "ruby /usr/bin/repman"

@@ -2,32 +2,63 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 2014.12.2
+##     Pacman Repository Manager 2014.12.4
 ##     Copyright (c) 2014 Renato Silva
 ##     Licensed under GNU GPLv2 or later
 ##
 ## This program manages pacman repositories. It uses a separate included file
-## /etc/pacman.d/pacrep.conf instead of /etc/pacman.conf. Options:
+## /etc/pacman.d/pacrep.conf instead of /etc/pacman.conf. Usage:
 ##
-##         --add=NAME     Add a repository and refresh database, requires --url.
-##         --remove=NAME  Remove a repository and refresh database.
-##         --url=VALUE    Set repository location.
-##     -l, --list         List all repositories.
+##     repman add NAME URL  Add a repository and refresh database.
+##     repman remove NAME   Remove a repository and refresh database.
+##     repman list          List all repositories.
 ##
 
 $0 = __FILE__
 require 'inifile'
 require 'easyoptions'
-options = EasyOptions.options
+if ARGV.empty?
+    puts EasyOptions.documentation
+    exit
+end
 
-repository_name = (options[:add] or options[:remove])
-EasyOptions.finish '--url is required' if options[:add] and not options[:url]
-EasyOptions.finish 'cannot add and remove repository at the same time' if options[:add] and options[:remove]
+class Repository
+    def initialize(name, url, siglevel)
+        @name = name
+        @url = url
+        @siglevel = siglevel
+    end
+    def save(config)
+        config[@name] = { 'Server' => @url, 'SigLevel' => @siglevel }
+        config.write
+    end
+    def remove(config)
+        config.delete_section(@name)
+        config.write
+    end
+    def self.load(config, name)
+        return nil unless config.has_section?(name)
+        siglevel = config[name]['SigLevel']
+        url = config[name]['Server']
+        self.new(name, url, siglevel)
+    end
+    def self.all(config)
+        config.sections.map do |name|
+            Repository.load(config, name)
+        end
+    end
+    attr_accessor :name
+    attr_accessor :url
+    attr_accessor :siglevel
+end
 
 pacman_file = '/etc/pacman.conf'
 config_file = '/etc/pacman.d/repman.conf'
-config = (IniFile.load(config_file) or IniFile.new(:filename => config_file))
+pacman_refresh='pacman --sync --refresh'
+command, name, url = EasyOptions.arguments
 include_regex = /^\s*Include\s+=\s+#{config_file}/
+config = (IniFile.load(config_file) or IniFile.new(:filename => config_file))
+repository = Repository.new(name, url, 'Optional')
 
 begin
     File.open(pacman_file, 'a') do |file|
@@ -37,30 +68,24 @@ rescue
     EasyOptions.finish "could not check #{pacman_file}"
 end
 
-if options[:add] then
-    config[repository_name] = {
-        'Server'   => options[:url],
-        'SigLevel' => 'Optional'
-    }
-    config.write
-    system('pacman --sync --refresh')
-    exit
-end
-
-if options[:remove] then
-    repository = config[repository_name]
-    EasyOptions.finish "could not find repository #{repository_name}" if not repository or repository.empty?
-    config.delete_section(repository_name)
-    config.write
-    system('pacman --sync --refresh')
-    exit
-end
-
-if options[:list] then
-    config.each_section do |repository_name|
-        repository = config[repository_name]
-        puts repository_name
-        puts "\tServer: #{repository['Server']}"
-        puts "\tSigLevel: #{repository['SigLevel']}"
+case command
+when 'add'
+    EasyOptions.finish 'name and URL required' unless url
+    repository.save(config)
+    system(pacman_refresh)
+when 'remove'
+    EasyOptions.finish 'name is required' unless name
+    repository = Repository.load(config, name)
+    EasyOptions.finish "could not find repository #{name}" unless repository
+    repository.remove(config)
+    system(pacman_refresh)
+when 'list' then
+    EasyOptions.finish "extra arguments to #{command} command" if EasyOptions.arguments[1]
+    Repository.all(config).each do |repository|
+        puts repository.name
+        puts "\tServer: #{repository.url}"
+        puts "\tSigLevel: #{repository.siglevel}"
     end
+else
+    EasyOptions.finish "unknown command #{command}"
 end

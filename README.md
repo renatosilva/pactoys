@@ -8,11 +8,10 @@ gem install repman
 
 ## Example
 
-
 ```
-repman --add name --url http://example.com
-repman --remove name
-repman --list
+repman add name http://example.com
+repman remove name
+repman list
 ```
 
 ## License and copyright
