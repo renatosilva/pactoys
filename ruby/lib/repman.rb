@@ -62,7 +62,8 @@ repository = Repository.new(name, url, 'Optional')
 
 begin
     File.open(pacman_file, 'a') do |file|
-        file.puts("\nInclude = #{config_file}")
+        file.puts("\n# Automatically included by repman")
+        file.puts("Include = #{config_file}")
     end if not File.readlines(pacman_file).grep(include_regex).any?
 rescue
     EasyOptions.finish "could not check #{pacman_file}"

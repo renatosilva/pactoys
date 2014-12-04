@@ -9,13 +9,14 @@
 #define NAME         "Pacman Repository Manager"
 #define COPYRIGHT    "Copyright (C) 2014 Renato Silva, David Macek"
 #define LICENSE      "Licensed under GNU GPLv2 or later"
-#define VERSION      "2014.12.2"
+#define VERSION      "2014.12.4"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \
                      "\trepman remove NAME\n" \
                      "\trepman list\n\n" \
 
+#define PACMAN_CONF "/etc/pacman.conf"
 #define CONFIG_FILE "/etc/pacman.d/repman.conf"
 #define MAX_REPOSITORIES 1024
 
@@ -27,7 +28,20 @@ typedef struct {
 } simple_repository;
 
 simple_repository repositories[MAX_REPOSITORIES];
+bool pacman_configured = false;
 int repo_index;
+
+static int parse_pacman_config(void* data, const char* section, const char* name, const char* value) {
+    if (pacman_configured)
+        return true;
+    pacman_configured = strcmp(name, "Include") == 0 &&
+#ifdef __CYGWIN__
+        strcasecmp(value, CONFIG_FILE) == 0;
+#else
+        strcmp(value, CONFIG_FILE) == 0;
+#endif
+    return true;
+}
 
 static int parse_repositories(void* data, const char* section, const char* name, const char* value) {
     if (strcmp(name, "Server") == 0) {
@@ -99,6 +113,19 @@ int main(int argc, char** argv) {
     if (ini_parse(CONFIG_FILE, parse_repositories, NULL) < 0) {
         printf("Could not read %s.\n", CONFIG_FILE);
         return EXIT_FAILURE;
+    }
+
+    /* Configure pacman */
+    if (ini_parse(PACMAN_CONF, parse_pacman_config, NULL) < 0) {
+        printf("Could not read %s.\n", PACMAN_CONF);
+        return EXIT_FAILURE;
+    }
+    if (!pacman_configured) {
+        FILE* pacman_conf = fopen(PACMAN_CONF, "ab+");
+        fprintf(pacman_conf, "\n# Automatically included by repman\n");
+        fprintf(pacman_conf, "Include = %s\n", CONFIG_FILE);
+        fclose(pacman_conf);
+        pacman_configured = true;
     }
 
     /* List repositories */
