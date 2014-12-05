@@ -2,7 +2,7 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 2014.12.4
+##     Pacman Repository Manager 2014.12.5
 ##     Copyright (c) 2014 Renato Silva
 ##     Licensed under GNU GPLv2 or later
 ##
@@ -57,7 +57,7 @@ config_file = '/etc/pacman.d/repman.conf'
 pacman_refresh='pacman --sync --refresh'
 command, name, url = EasyOptions.arguments
 include_regex = /^\s*Include\s+=\s+#{config_file}/
-config = (IniFile.load(config_file) or IniFile.new(:filename => config_file))
+config = (IniFile.load(config_file) or IniFile.new(:filename => config_file).write)
 repository = Repository.new(name, url, 'Optional')
 
 begin
