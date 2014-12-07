@@ -5,8 +5,9 @@
 # Licensed under GPLv2 or later
 
 repman="$1"
+colored="$2"
 if [[ -z "$repman" ]]; then
-    echo "Usage: $(basename "$0") PATH_TO_REPMAN"
+    echo "Usage: $(basename "$0") PATH_TO_REPMAN [colored]"
     exit 1
 fi
 
@@ -15,7 +16,7 @@ if [[ -e $config ]]; then
     mv $config $config.bak
     trap "mv $config.bak $config" EXIT
 fi
-if [[ -t 1 ]]; then
+if [[ -t 1 || "$colored" = colored ]]; then
     green_color="\e[0;32m"
     normal_color="\e[0m"
 fi
