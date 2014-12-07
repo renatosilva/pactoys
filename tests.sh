@@ -4,6 +4,12 @@
 # Copyright (C) 2014 Renato Silva
 # Licensed under GPLv2 or later
 
+repman="$1"
+if [[ -z "$repman" ]]; then
+    echo "Usage: $(basename "$0") PATH_TO_REPMAN"
+    exit 1
+fi
+
 config="/etc/pacman.d/repman.conf"
 if [[ -e $config ]]; then
     mv $config $config.bak
@@ -11,20 +17,8 @@ if [[ -e $config ]]; then
 fi
 if [[ -t 1 ]]; then
     green_color="\e[0;32m"
-    purple_color="\e[1;35m"
     normal_color="\e[0m"
 fi
-
-runtest() {
-    for test in "${tests[@]}"; do
-        command="${test%%::*}"
-        arguments="${test#*::}"
-        [[ "$command" = repman ]] && command="$2"
-        echo -e "${1}\$ ${command} ${arguments}${normal_color}"
-        $command $arguments
-        echo
-    done
-}
 
 tests=(repman::
          grep::"repman /etc/pacman.conf"
@@ -41,5 +35,11 @@ tests=(repman::
        repman::"list extra arguments"
        repman::"hello")
 
-runtest "${green_color}"  "repman.exe"
-runtest "${purple_color}" "ruby /usr/bin/repman"
+for test in "${tests[@]}"; do
+    command="${test%%::*}"
+    arguments="${test#*::}"
+    [[ "$command" = repman ]] && command="$repman"
+    echo -e "${green_color}\$ ${command} ${arguments}${normal_color}"
+    $command $arguments
+    echo
+done
