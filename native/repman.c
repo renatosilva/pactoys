@@ -7,9 +7,9 @@
 #include <ini.h>
 
 #define NAME         "Pacman Repository Manager"
-#define COPYRIGHT    "Copyright (C) 2014 Renato Silva, David Macek"
+#define COPYRIGHT    "Copyright (C) 2014 Renato Silva and others"
 #define LICENSE      "Licensed under GNU GPLv2 or later"
-#define VERSION      "2014.12.4"
+#define VERSION      "2015.2.28"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \
