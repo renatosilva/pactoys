@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2014 Renato Silva <br.renatosilva@gmail.com>
+ * Copyright (c) 2014 David Macek <david.macek.0@gmail.com>
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
