@@ -8,8 +8,8 @@
 
 #define NAME         "Pacman Repository Manager"
 #define COPYRIGHT    "Copyright (C) 2014 Renato Silva and others"
-#define LICENSE      "Licensed under GNU GPLv2 or later (some parts under BSD)"
-#define VERSION      "2015.2.28"
+#define LICENSE      "Licensed under BSD"
+#define VERSION      "2015.3.1"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \

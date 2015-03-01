@@ -17,5 +17,4 @@ repman list
 ## License and copyright
 
 Copyright (c) 2014 Renato Silva and others.
-Licensed under the terms of the GNU GPL version 2 or later.
-Most of the code is also available under the [3-clause BSD license](LICENSE).
+Licensed under the terms of the [3-clause BSD license](LICENSE).
