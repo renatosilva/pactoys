@@ -2,7 +2,7 @@
 
 # Tests for Repman
 # Copyright (C) 2014 Renato Silva
-# Licensed under GPLv2 or later
+# Licensed under BSD
 
 repman="$1"
 colored="$2"

@@ -2,9 +2,9 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 2014.12.5
+##     Pacman Repository Manager 2015.2.28
 ##     Copyright (c) 2014 Renato Silva
-##     Licensed under GNU GPLv2 or later
+##     Licensed under BSD
 ##
 ## This program manages pacman repositories. It uses a separate included file
 ## /etc/pacman.d/pacrep.conf instead of /etc/pacman.conf. Usage:
