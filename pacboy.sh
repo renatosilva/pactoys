@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "${1}" = "${1:+help}" ]]; then echo "
-    Pacboy 2015.4.2
+    Pacboy 2015.6.20
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
@@ -29,9 +29,14 @@ Commands:
 exit 1
 fi
 
-architecture=$(uname -m)
+machine=$(uname -m)
 pacman_arguments=()
 arguments=()
+case "${MSYSTEM}" in
+    MINGW32) architecture='i686' ;;
+    MINGW64) architecture='x86_64' ;;
+    *)       architecture="${machine}"
+esac
 
 for argument in "${@}"; do
     if [[ -n "${command}" ]]; then
@@ -51,6 +56,7 @@ for argument in "${@}"; do
         *)           arguments+=("${argument}")
     esac
 done
+
 for argument in "${arguments[@]}"; do
     case "${argument}" in
     *\\*) pacman_arguments+=("${argument}") ;;
@@ -64,11 +70,17 @@ for argument in "${arguments[@]}"; do
           [[ "${command}"       = packages ]] && { pacman_arguments+=(${argument}); continue; }
           [[ "${command}"       = syncfile ]] && { pacman_arguments+=(${argument}); continue; }
           [[ "${MSYSTEM}"      != MINGW*   ]] && { pacman_arguments+=(${argument}); continue; }
-          [[ "${architecture}" != x86_64   ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
+          [[ "${machine}"      != x86_64   ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
+          [[ "${command}"       = files    ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
+          [[ "${command}"       = info     ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
           pacman_arguments+=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
     esac
-    [[ "${argument}" =~ -h|--help ]] && echo "did you mean '$(basename "$0") help'?"
+    [[ "${argument}" =~ ^-h|--help$ ]] && echo "did you mean '$(basename "$0") help'?"
 done
 
-[[ "${command}" =~ update|refresh && -f /usr/bin/pkgfile ]] && pkgfile --update
-pacman --color auto "${pacman_arguments[@]}"
+case "${command}" in
+    update|refresh) test -f /usr/bin/pkgfile && pkgfile --update
+                    pacman --color auto "${pacman_arguments[@]}" ;;
+    files)          pacman --color auto "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
+    *)              pacman --color auto "${pacman_arguments[@]}"
+esac
