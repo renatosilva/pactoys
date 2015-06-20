@@ -9,7 +9,7 @@ pacman --sync pacboy
 
 ## Examples
 
-Under MinGW shell, for 64-bit MSYS2, install both `mingw-w64-i686-python2-nuitka` and `mingw-w64-i686-python2-nuitka`, or just the i686 version for 32-bit MSYS2:
+Under MinGW shell, for 64-bit MSYS2, install both `mingw-w64-x86_64-python2-nuitka` and `mingw-w64-i686-python2-nuitka`, or just the i686 version for 32-bit MSYS2:
 
 ```
 pacboy sync python2-nuitka
