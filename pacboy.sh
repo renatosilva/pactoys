@@ -13,7 +13,8 @@ Usage:
     For 64-bit MSYS2, name:i means i686-only
     For 64-bit MSYS2, name:x means x86_64-only
     For MSYS shell, name:m means mingw-w64
-    For all shells, name: disables any translation
+    For all shells, name: disables any translation for name
+    For all shells, repository::name means repository/name
 
 Commands:
     sync        Shorthand for --sync
@@ -28,6 +29,17 @@ Commands:
 "
 exit 1
 fi
+
+parse_mingw_argument() {
+    [[ "${command}"  = find     ]] && { pacman_argument=(${argument}); return; }
+    [[ "${command}"  = packages ]] && { pacman_argument=(${argument}); return; }
+    [[ "${command}"  = syncfile ]] && { pacman_argument=(${argument}); return; }
+    [[ "${MSYSTEM}" != MINGW*   ]] && { pacman_argument=(${argument}); return; }
+    [[ "${machine}" != x86_64   ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
+    [[ "${command}"  = files    ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
+    [[ "${command}"  = info     ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
+    pacman_argument=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
+}
 
 machine=$(uname -m)
 pacman_arguments=()
@@ -58,24 +70,25 @@ for argument in "${@}"; do
 done
 
 for argument in "${arguments[@]}"; do
+    if [[ "${argument}" = *::* ]]; then
+        repository="${argument%::*}/"
+        argument="${argument##*::}"
+    fi
     case "${argument}" in
-    *\\*) pacman_arguments+=("${argument}") ;;
-     */*) pacman_arguments+=("${argument}") ;;
-      -*) pacman_arguments+=("${argument}") ;;
-      *:) pacman_arguments+=("${argument%:}") ;;
-     *:i) pacman_arguments+=(mingw-w64-i686-${argument%:i}) ;;
-     *:x) pacman_arguments+=(mingw-w64-x86_64-${argument%:x}) ;;
-     *:m) pacman_arguments+=(mingw-w64-x86_64-${argument%:m} mingw-w64-i686-${argument%:m}) ;;
-       *) [[ "${command}"       = find     ]] && { pacman_arguments+=(${argument}); continue; }
-          [[ "${command}"       = packages ]] && { pacman_arguments+=(${argument}); continue; }
-          [[ "${command}"       = syncfile ]] && { pacman_arguments+=(${argument}); continue; }
-          [[ "${MSYSTEM}"      != MINGW*   ]] && { pacman_arguments+=(${argument}); continue; }
-          [[ "${machine}"      != x86_64   ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
-          [[ "${command}"       = files    ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
-          [[ "${command}"       = info     ]] && { pacman_arguments+=(mingw-w64-${architecture}-${argument}); continue; }
-          pacman_arguments+=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
+    *\\*) pacman_argument=("${argument}") ;;
+     */*) pacman_argument=("${argument}") ;;
+      -*) pacman_argument=("${argument}") ;;
+      *:) pacman_argument=("${argument%:}") ;;
+     *:i) pacman_argument=(mingw-w64-i686-${argument%:i}) ;;
+     *:x) pacman_argument=(mingw-w64-x86_64-${argument%:x}) ;;
+     *:m) pacman_argument=(mingw-w64-x86_64-${argument%:m} mingw-w64-i686-${argument%:m}) ;;
+       *) parse_mingw_argument ;;
     esac
     [[ "${argument}" =~ ^-h|--help$ ]] && echo "did you mean '$(basename "$0") help'?"
+    for pacman_argument in "${pacman_argument[@]}"; do
+        pacman_arguments+=("${repository}${pacman_argument}")
+    done
+    unset repository
 done
 
 case "${command}" in

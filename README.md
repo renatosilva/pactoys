@@ -28,6 +28,13 @@ pacboy coreutils: info
 pacboy coreutils: files
 ```
 
+Install MinGW and MSYS versions of libiconv from a configured repository named `mozilla`:
+
+```
+pacboy sync mozilla::libiconv
+pacboy sync mozilla::libiconv:
+```
+
 ## License and copyright
 
 Copyright (c) 2015 Renato Silva.
