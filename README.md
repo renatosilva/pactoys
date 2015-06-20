@@ -21,11 +21,11 @@ Remove `mingw-w64-x86_64-perl` and unnecessary dependencies under any shell:
 pacboy remove perl:x
 ```
 
-Show information and list files from `coreutils` under MinGW shell:
+Show information and list files from `mingw-w64-x86_64-libmongoose-git` under 64-bit MinGW shell:
 
 ```
-pacboy coreutils: info
-pacboy coreutils: files
+pacboy libmongoose info
+pacboy libmongoose files
 ```
 
 Install MinGW and MSYS versions of libiconv from a configured repository named `mozilla`:

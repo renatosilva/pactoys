@@ -41,6 +41,16 @@ parse_mingw_argument() {
     pacman_argument=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
 }
 
+realname() {
+    pacman -Q "${1}"     > /dev/null 2>&1 && { echo "${1}";     return; }
+    pacman -Q "${1}-git" > /dev/null 2>&1 && { echo "${1}-git"; return; }
+    pacman -Q "${1}-svn" > /dev/null 2>&1 && { echo "${1}-svn"; return; }
+    pacman -Q "${1}-hg"  > /dev/null 2>&1 && { echo "${1}-hg";  return; }
+    pacman -Q "${1}-cvs" > /dev/null 2>&1 && { echo "${1}-cvs"; return; }
+    pacman -Q "${1}-bzr" > /dev/null 2>&1 && { echo "${1}-bzr"; return; }
+    echo "${1}"
+}
+
 machine=$(uname -m)
 pacman_arguments=()
 arguments=()
@@ -86,6 +96,7 @@ for argument in "${arguments[@]}"; do
     esac
     [[ "${argument}" =~ ^-h|--help$ ]] && echo "did you mean '$(basename "$0") help'?"
     for pacman_argument in "${pacman_argument[@]}"; do
+        [[ "${command}" =~ ^files|info|remove$ ]] && pacman_argument=$(realname "${pacman_argument}")
         pacman_arguments+=("${repository}${pacman_argument}")
     done
     unset repository
