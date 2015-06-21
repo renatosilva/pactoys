@@ -35,11 +35,11 @@ pacboy files repman-git-r23.87bf865-1-x86_64.pkg.tar.xz
 pacboy sync  repman-git-r23.87bf865-1-x86_64.pkg.tar.xz
 ```
 
-Install MinGW and MSYS versions of libiconv from a configured repository named `mozilla`:
+Install MinGW and MSYS versions of libiconv from a configured repository named `mozilla`, with debug output enabled:
 
 ```
-pacboy sync mozilla::libiconv
-pacboy sync mozilla::libiconv:
+pacboy debug sync mozilla::libiconv
+pacboy debug sync mozilla::libiconv:
 ```
 
 ## License and copyright

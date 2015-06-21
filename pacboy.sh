@@ -25,6 +25,7 @@ Commands:
     files       Shorthand for --query --list [--file]
     info        Shorthand for --query --info [--file]
     remove      Shorthand for --remove --recursive
+    debug       Verbose output for the above commands.
 "
 exit 1
 fi
@@ -53,6 +54,11 @@ realname() {
     echo "${1}"
 }
 
+execute_pacman() {
+    test -n "${debug}" && echo Executing pacman "${@}" >&2
+    pacman "${@}"
+}
+
 machine=$(uname -m)
 pacman_arguments=()
 arguments=()
@@ -63,6 +69,10 @@ case "${MSYSTEM}" in
 esac
 
 for argument in "${@}"; do
+    if [[ "${argument}" = debug && -z "${debug}" ]]; then
+        debug='true'
+        continue
+    fi
     if [[ -n "${command}" ]]; then
         arguments+=("${argument}")
         continue
@@ -111,7 +121,7 @@ done
 
 case "${command}" in
     update|refresh) test -f /usr/bin/pkgfile && pkgfile --update
-                    pacman --color auto $pacman_command "${pacman_arguments[@]}" ;;
-    files)          pacman --color auto $pacman_command "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
-    *)              pacman --color auto $pacman_command "${pacman_arguments[@]}"
+                    execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}" ;;
+    files)          execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
+    *)              execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}"
 esac
