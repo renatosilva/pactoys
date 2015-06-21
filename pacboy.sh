@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "${1}" = "${1:+help}" ]]; then echo "
-    Pacboy 2015.6.20
+    Pacboy 2015.6.21
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
@@ -17,23 +17,24 @@ Usage:
     For all shells, repository::name means repository/name
 
 Commands:
-    sync        Shorthand for --sync
+    sync        Shorthand for --sync or --upgrade
     update      Shorthand for --sync --refresh --sysupgrade
     refresh     Shorthand for --sync --refresh
     find        Shorthand for --sync --search
     packages    Shorthand for --sync --list
-    files       Shorthand for --query --list
-    info        Shorthand for --query --info
+    files       Shorthand for --query --list [--file]
+    info        Shorthand for --query --info [--file]
     remove      Shorthand for --remove --recursive
-    syncfile    Shorthand for --upgrade
 "
 exit 1
 fi
 
 parse_mingw_argument() {
+    [[ "${command}"  = sync     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
+    [[ "${command}"  = files    && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
+    [[ "${command}"  = info     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = find     ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = packages ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = syncfile ]] && { pacman_argument=(${argument}); return; }
     [[ "${MSYSTEM}" != MINGW*   ]] && { pacman_argument=(${argument}); return; }
     [[ "${machine}" != x86_64   ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
     [[ "${command}"  = files    ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
@@ -42,6 +43,7 @@ parse_mingw_argument() {
 }
 
 realname() {
+    test -f "${1}" && { echo "${1}"; return; }
     pacman -Q "${1}"     > /dev/null 2>&1 && { echo "${1}";     return; }
     pacman -Q "${1}-git" > /dev/null 2>&1 && { echo "${1}-git"; return; }
     pacman -Q "${1}-svn" > /dev/null 2>&1 && { echo "${1}-svn"; return; }
@@ -66,15 +68,14 @@ for argument in "${@}"; do
         continue
     fi
     case "${argument}" in
-        sync)        command="${argument}"; pacman_arguments+=(--sync) ;;
-        update)      command="${argument}"; pacman_arguments+=(--sync --refresh --sysupgrade) ;;
-        refresh)     command="${argument}"; pacman_arguments+=(--sync --refresh) ;;
-        find)        command="${argument}"; pacman_arguments+=(--sync --search) ;;
-        packages)    command="${argument}"; pacman_arguments+=(--sync --list) ;;
-        files)       command="${argument}"; pacman_arguments+=(--query --list) ;;
-        info)        command="${argument}"; pacman_arguments+=(--query --info) ;;
-        remove)      command="${argument}"; pacman_arguments+=(--remove --recursive) ;;
-        syncfile)    command="${argument}"; pacman_arguments+=(--upgrade) ;;
+        sync)        command="${argument}"; pacman_command='--sync' ;;
+        update)      command="${argument}"; pacman_command='--sync --refresh --sysupgrade' ;;
+        refresh)     command="${argument}"; pacman_command='--sync --refresh' ;;
+        find)        command="${argument}"; pacman_command='--sync --search' ;;
+        packages)    command="${argument}"; pacman_command='--sync --list' ;;
+        files)       command="${argument}"; pacman_command='--query --list' ;;
+        info)        command="${argument}"; pacman_command='--query --info' ;;
+        remove)      command="${argument}"; pacman_command='--remove --recursive' ;;
         *)           arguments+=("${argument}")
     esac
 done
@@ -84,6 +85,11 @@ for argument in "${arguments[@]}"; do
         repository="${argument%::*}/"
         argument="${argument##*::}"
     fi
+    case "${command}" in
+        sync)  test -f "${argument}" && { file_argument='true'; pacman_command='--upgrade'; } ;;
+        files) test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
+        info)  test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
+    esac
     case "${argument}" in
     *\\*) pacman_argument=("${argument}") ;;
      */*) pacman_argument=("${argument}") ;;
@@ -99,12 +105,13 @@ for argument in "${arguments[@]}"; do
         [[ "${command}" =~ ^files|info|remove$ ]] && pacman_argument=$(realname "${pacman_argument}")
         pacman_arguments+=("${repository}${pacman_argument}")
     done
+    unset file_argument
     unset repository
 done
 
 case "${command}" in
     update|refresh) test -f /usr/bin/pkgfile && pkgfile --update
-                    pacman --color auto "${pacman_arguments[@]}" ;;
-    files)          pacman --color auto "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
-    *)              pacman --color auto "${pacman_arguments[@]}"
+                    pacman --color auto $pacman_command "${pacman_arguments[@]}" ;;
+    files)          pacman --color auto $pacman_command "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
+    *)              pacman --color auto $pacman_command "${pacman_arguments[@]}"
 esac

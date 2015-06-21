@@ -28,6 +28,13 @@ pacboy libmongoose info
 pacboy libmongoose files
 ```
 
+List content and install a package file:
+
+```
+pacboy files repman-git-r23.87bf865-1-x86_64.pkg.tar.xz
+pacboy sync  repman-git-r23.87bf865-1-x86_64.pkg.tar.xz
+```
+
 Install MinGW and MSYS versions of libiconv from a configured repository named `mozilla`:
 
 ```
