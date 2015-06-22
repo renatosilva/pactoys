@@ -58,11 +58,6 @@ realname() {
     echo "${1}"
 }
 
-execute_command() {
-    test -n "${debug}" && echo Executing ${raw_command} "${raw_arguments[@]}" >&2
-    ${raw_command} "${raw_arguments[@]}"
-}
-
 arguments=()
 raw_arguments=()
 pacman='pacman --color auto'
@@ -126,8 +121,17 @@ for argument in "${arguments[@]}"; do
     unset repository
 done
 
+if [[ -n "${debug}" ]]; then
+    if [[ -t 1 ]]; then
+        blue="\e[1;34m"
+        white="\e[1;37m"
+        normal='\e[0m'
+    fi
+    echo -e "${blue}::${white}" Executing ${raw_command} "${raw_arguments[@]}${normal}" >&2
+fi
+
 case "${command}" in
-    update|refresh) execute_command ; pkgfile --update ;;
-    files)          execute_command | grep --invert-match '/$' ;;
-    *)              execute_command
+    update|refresh) ${raw_command} "${raw_arguments[@]}" ; pkgfile --update ;;
+    files)          ${raw_command} "${raw_arguments[@]}" | grep --invert-match '/$' ;;
+    *)              ${raw_command} "${raw_arguments[@]}"
 esac
