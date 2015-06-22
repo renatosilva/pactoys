@@ -121,6 +121,10 @@ for argument in "${arguments[@]}"; do
     unset repository
 done
 
+if [[ -z "${raw_command}" ]]; then
+    raw_command="${pacman}"
+fi
+
 if [[ -n "${debug}" ]]; then
     if [[ -t 1 ]]; then
         blue="\e[1;34m"
