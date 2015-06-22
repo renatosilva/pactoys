@@ -34,17 +34,17 @@ exit 1
 fi
 
 parse_mingw_argument() {
-    [[ "${command}"  = sync     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = files    && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = info     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = origin   ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = find     ]] && { pacman_argument=(${argument}); return; }
-    [[ "${command}"  = packages ]] && { pacman_argument=(${argument}); return; }
-    [[ "${MSYSTEM}" != MINGW*   ]] && { pacman_argument=(${argument}); return; }
-    [[ "${machine}" != x86_64   ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
-    [[ "${command}"  = files    ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
-    [[ "${command}"  = info     ]] && { pacman_argument=(mingw-w64-${architecture}-${argument}); return; }
-    pacman_argument=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
+    [[ "${command}"  = sync     && -n "${file_argument}" ]] && { raw_argument=(${argument}); return; }
+    [[ "${command}"  = files    && -n "${file_argument}" ]] && { raw_argument=(${argument}); return; }
+    [[ "${command}"  = info     && -n "${file_argument}" ]] && { raw_argument=(${argument}); return; }
+    [[ "${command}"  = origin   ]] && { raw_argument=(${argument}); return; }
+    [[ "${command}"  = find     ]] && { raw_argument=(${argument}); return; }
+    [[ "${command}"  = packages ]] && { raw_argument=(${argument}); return; }
+    [[ "${MSYSTEM}" != MINGW*   ]] && { raw_argument=(${argument}); return; }
+    [[ "${machine}" != x86_64   ]] && { raw_argument=(mingw-w64-${architecture}-${argument}); return; }
+    [[ "${command}"  = files    ]] && { raw_argument=(mingw-w64-${architecture}-${argument}); return; }
+    [[ "${command}"  = info     ]] && { raw_argument=(mingw-w64-${architecture}-${argument}); return; }
+    raw_argument=(mingw-w64-x86_64-${argument} mingw-w64-i686-${argument})
 }
 
 realname() {
@@ -59,13 +59,14 @@ realname() {
 }
 
 execute_command() {
-    test -n "${debug}" && echo Executing ${raw_command} "${pacman_arguments[@]}" >&2
-    ${raw_command} "${pacman_arguments[@]}"
+    test -n "${debug}" && echo Executing ${raw_command} "${raw_arguments[@]}" >&2
+    ${raw_command} "${raw_arguments[@]}"
 }
 
-machine=$(uname -m)
-pacman_arguments=()
 arguments=()
+raw_arguments=()
+pacman='pacman --color auto'
+machine=$(uname -m)
 case "${MSYSTEM}" in
     MINGW32) architecture='i686' ;;
     MINGW64) architecture='x86_64' ;;
@@ -82,14 +83,14 @@ for argument in "${@}"; do
         continue
     fi
     case "${argument}" in
-        sync)        command="${argument}"; pacman_command='--sync' ;;
-        update)      command="${argument}"; pacman_command='--sync --refresh --sysupgrade' ;;
-        refresh)     command="${argument}"; pacman_command='--sync --refresh' ;;
-        find)        command="${argument}"; pacman_command='--sync --search' ;;
-        packages)    command="${argument}"; pacman_command='--sync --list' ;;
-        files)       command="${argument}"; pacman_command='--query --list' ;;
-        info)        command="${argument}"; pacman_command='--query --info' ;;
-        remove)      command="${argument}"; pacman_command='--remove --recursive' ;;
+        sync)        command="${argument}"; raw_command="${pacman} --sync" ;;
+        update)      command="${argument}"; raw_command="${pacman} --sync --refresh --sysupgrade" ;;
+        refresh)     command="${argument}"; raw_command="${pacman} --sync --refresh" ;;
+        find)        command="${argument}"; raw_command="${pacman} --sync --search" ;;
+        packages)    command="${argument}"; raw_command="${pacman} --sync --list" ;;
+        files)       command="${argument}"; raw_command="${pacman} --query --list" ;;
+        info)        command="${argument}"; raw_command="${pacman} --query --info" ;;
+        remove)      command="${argument}"; raw_command="${pacman} --remove --recursive" ;;
         origin)      command="${argument}"; raw_command='pkgfile' ;;
         *)           arguments+=("${argument}")
     esac
@@ -101,31 +102,30 @@ for argument in "${arguments[@]}"; do
         argument="${argument##*::}"
     fi
     case "${command}" in
-        sync)  test -f "${argument}" && { file_argument='true'; pacman_command='--upgrade'; } ;;
-        files) test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
-        info)  test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
-        origin) test -f "${argument}" && { file_argument='true'; pacman_command='--query --owns';  } ;;
+        sync)   test -f "${argument}" && { file_argument='true'; raw_command="${pacman} --upgrade"; } ;;
+        origin) test -f "${argument}" && { file_argument='true'; raw_command="${pacman} --query --owns"; } ;;
+        files)  test -f "${argument}" && { file_argument='true'; raw_command="${raw_command} --file"; } ;;
+        info)   test -f "${argument}" && { file_argument='true'; raw_command="${raw_command} --file"; } ;;
     esac
     case "${argument}" in
-    *\\*) pacman_argument=("${argument}") ;;
-     */*) pacman_argument=("${argument}") ;;
-      -*) pacman_argument=("${argument}") ;;
-      *:) pacman_argument=("${argument%:}") ;;
-     *:i) pacman_argument=(mingw-w64-i686-${argument%:i}) ;;
-     *:x) pacman_argument=(mingw-w64-x86_64-${argument%:x}) ;;
-     *:m) pacman_argument=(mingw-w64-x86_64-${argument%:m} mingw-w64-i686-${argument%:m}) ;;
+    *\\*) raw_argument=("${argument}") ;;
+     */*) raw_argument=("${argument}") ;;
+      -*) raw_argument=("${argument}") ;;
+      *:) raw_argument=("${argument%:}") ;;
+     *:i) raw_argument=(mingw-w64-i686-${argument%:i}) ;;
+     *:x) raw_argument=(mingw-w64-x86_64-${argument%:x}) ;;
+     *:m) raw_argument=(mingw-w64-x86_64-${argument%:m} mingw-w64-i686-${argument%:m}) ;;
        *) parse_mingw_argument ;;
     esac
     [[ "${argument}" =~ ^-h|--help$ ]] && echo "did you mean '$(basename "$0") help'?"
-    for pacman_argument in "${pacman_argument[@]}"; do
-        [[ "${command}" =~ ^files|info|remove$ ]] && pacman_argument=$(realname "${pacman_argument}")
-        pacman_arguments+=("${repository}${pacman_argument}")
+    for raw_argument in "${raw_argument[@]}"; do
+        [[ "${command}" =~ ^files|info|remove$ ]] && raw_argument=$(realname "${raw_argument}")
+        raw_arguments+=("${repository}${raw_argument}")
     done
     unset file_argument
     unset repository
 done
 
-test -n "${pacman_command}" && raw_command="pacman --color auto ${pacman_command}"
 case "${command}" in
     update|refresh) execute_command ; pkgfile --update ;;
     files)          execute_command | grep --invert-match '/$' ;;
