@@ -58,6 +58,16 @@ realname() {
     echo "${1}"
 }
 
+debug() {
+    test -z "${debug}" && return
+    if [[ -t 1 ]]; then
+        local blue='\e[1;34m'
+        local white='\e[1;37m'
+        local normal='\e[0m'
+    fi
+    echo -e "${blue}::${white}" Executing "${@}${normal}" >&2
+}
+
 arguments=()
 raw_arguments=()
 pacman='pacman --color auto'
@@ -121,21 +131,13 @@ for argument in "${arguments[@]}"; do
     unset repository
 done
 
-if [[ -z "${raw_command}" ]]; then
-    raw_command="${pacman}"
-fi
-
-if [[ -n "${debug}" ]]; then
-    if [[ -t 1 ]]; then
-        blue="\e[1;34m"
-        white="\e[1;37m"
-        normal='\e[0m'
-    fi
-    echo -e "${blue}::${white}" Executing ${raw_command} "${raw_arguments[@]}${normal}" >&2
-fi
+test -z "${raw_command}" && raw_command="${pacman}"
+raw_command=(${raw_command} "${raw_arguments[@]}")
 
 case "${command}" in
-    update|refresh) ${raw_command} "${raw_arguments[@]}" ; pkgfile --update ;;
-    files)          ${raw_command} "${raw_arguments[@]}" | grep --invert-match '/$' ;;
-    *)              ${raw_command} "${raw_arguments[@]}"
+    update|refresh) debug pkgfile --update
+                          pkgfile --update
+                    debug "${raw_command[@]}"; "${raw_command[@]}" ;;
+    files)          debug "${raw_command[@]}"; "${raw_command[@]}" | grep --invert-match '/$' ;;
+    *)              debug "${raw_command[@]}"; "${raw_command[@]}" ;;
 esac
