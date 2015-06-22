@@ -42,6 +42,13 @@ pacboy debug sync mozilla::libiconv
 pacboy debug sync mozilla::libiconv:
 ```
 
+Find packages that provide a specific file:
+
+```
+pacboy origin rsync.exe
+pacboy origin /usr/bin/rsync.exe
+```
+
 ## License and copyright
 
 Copyright (c) 2015 Renato Silva.

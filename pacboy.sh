@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "${1}" = "${1:+help}" ]]; then echo "
-    Pacboy 2015.6.21
+    Pacboy 2015.6.22
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
@@ -9,7 +9,9 @@ This is a pacman wrapper for MSYS2 which handles the package prefixes
 automatically, and provides human-friendly commands for common tasks.
 
 Usage:
-    $(basename "$0") [command] [pacman_options] [pacman_arguments]
+    $(basename "$0") [command] [arguments]
+    Arguments will be passed to pacman or pkgfile after translation:
+
     For 64-bit MSYS2, name:i means i686-only
     For 64-bit MSYS2, name:x means x86_64-only
     For MSYS shell, name:m means mingw-w64
@@ -24,6 +26,7 @@ Commands:
     packages    Shorthand for --sync --list
     files       Shorthand for --query --list [--file]
     info        Shorthand for --query --info [--file]
+    origin      Shorthand for --query --owns or pkgfile
     remove      Shorthand for --remove --recursive
     debug       Verbose output for the above commands.
 "
@@ -34,6 +37,7 @@ parse_mingw_argument() {
     [[ "${command}"  = sync     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = files    && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = info     && -n "${file_argument}" ]] && { pacman_argument=(${argument}); return; }
+    [[ "${command}"  = origin   ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = find     ]] && { pacman_argument=(${argument}); return; }
     [[ "${command}"  = packages ]] && { pacman_argument=(${argument}); return; }
     [[ "${MSYSTEM}" != MINGW*   ]] && { pacman_argument=(${argument}); return; }
@@ -54,9 +58,9 @@ realname() {
     echo "${1}"
 }
 
-execute_pacman() {
-    test -n "${debug}" && echo Executing pacman "${@}" >&2
-    pacman "${@}"
+execute_command() {
+    test -n "${debug}" && echo Executing ${raw_command} "${pacman_arguments[@]}" >&2
+    ${raw_command} "${pacman_arguments[@]}"
 }
 
 machine=$(uname -m)
@@ -86,6 +90,7 @@ for argument in "${@}"; do
         files)       command="${argument}"; pacman_command='--query --list' ;;
         info)        command="${argument}"; pacman_command='--query --info' ;;
         remove)      command="${argument}"; pacman_command='--remove --recursive' ;;
+        origin)      command="${argument}"; raw_command='pkgfile' ;;
         *)           arguments+=("${argument}")
     esac
 done
@@ -99,6 +104,7 @@ for argument in "${arguments[@]}"; do
         sync)  test -f "${argument}" && { file_argument='true'; pacman_command='--upgrade'; } ;;
         files) test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
         info)  test -f "${argument}" && { file_argument='true'; pacman_command="${pacman_command} --file"; } ;;
+        origin) test -f "${argument}" && { file_argument='true'; pacman_command='--query --owns';  } ;;
     esac
     case "${argument}" in
     *\\*) pacman_argument=("${argument}") ;;
@@ -119,9 +125,9 @@ for argument in "${arguments[@]}"; do
     unset repository
 done
 
+test -n "${pacman_command}" && raw_command="pacman --color auto ${pacman_command}"
 case "${command}" in
-    update|refresh) test -f /usr/bin/pkgfile && pkgfile --update
-                    execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}" ;;
-    files)          execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}" | grep --invert-match '/$' ;;
-    *)              execute_pacman --color auto ${pacman_command} "${pacman_arguments[@]}"
+    update|refresh) execute_command ; pkgfile --update ;;
+    files)          execute_command | grep --invert-match '/$' ;;
+    *)              execute_command
 esac
