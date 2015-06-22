@@ -1,0 +1,21 @@
+_pacboy() {
+    local current="${COMP_WORDS[COMP_CWORD]}"
+    local commands='sync update refresh find packages files info origin remove debug'
+    local pacboy_reply=($(compgen -W "${commands}" -- ${current}))
+
+    if [[ "${COMP_CWORD}" = 1 ]]; then
+        COMPREPLY=("${pacboy_reply[@]}")
+        return
+    fi
+
+    _pacman;  local pacman_reply=("${COMPREPLY[@]}")
+    _pkgfile; local pkgfile_reply=("${COMPREPLY[@]}")
+
+    COMPREPLY=("${pacboy_reply[@]}")
+    COMPREPLY+=("${pacman_reply[@]}")
+    COMPREPLY+=("${pkgfile_reply[@]}")
+}
+
+source "${BASH_SOURCE%/*}/pacman"
+source "${BASH_SOURCE%/*}/pkgfile"
+complete -F _pacboy -o default pacboy
