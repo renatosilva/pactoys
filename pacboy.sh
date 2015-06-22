@@ -58,14 +58,13 @@ realname() {
     echo "${1}"
 }
 
-debug() {
-    test -z "${debug}" && return
+status() {
     if [[ -t 1 ]]; then
         local blue='\e[1;34m'
         local white='\e[1;37m'
         local normal='\e[0m'
     fi
-    echo -e "${blue}::${white}" Executing "${@}${normal}" >&2
+    echo -e "${blue}::${white}" "${@}...${normal}" >&2
 }
 
 arguments=()
@@ -135,9 +134,9 @@ test -z "${raw_command}" && raw_command="${pacman}"
 raw_command=(${raw_command} "${raw_arguments[@]}")
 
 case "${command}" in
-    update|refresh) debug pkgfile --update
-                          pkgfile --update
-                    debug "${raw_command[@]}"; "${raw_command[@]}" ;;
-    files)          debug "${raw_command[@]}"; "${raw_command[@]}" | grep --invert-match '/$' ;;
-    *)              debug "${raw_command[@]}"; "${raw_command[@]}" ;;
+    update|refresh) status 'Synchronizing pkgfile databases'
+                    pkgfile --update
+                    test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" ;;
+    files)          test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" | grep --invert-match '/$' ;;
+    *)              test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" ;;
 esac
