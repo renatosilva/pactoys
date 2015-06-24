@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "${1}" = "${1:+help}" ]]; then echo "
-    Pacboy 2015.6.24
+    Pacboy 2015.6.26
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
@@ -68,11 +68,40 @@ status() {
 }
 
 execute() {
-    test -n "${debug}" && status Executing "${@}"
+    [[ -n "${debug}" && $(type -t "${1}") != function ]] && status Executing "${@}"
     if [[ -z "${exclude_lines}" ]]
         then "${@}"
         else "${@}" | grep --invert-match "${exclude_lines}"
     fi
+}
+
+packages() {
+    local repository="${1}"
+    for package in $(pacman --sync --list --quiet ${repository}); do
+        case "${package}" in
+            mingw-w64-x86_64-*) package="${package/mingw-w64-x86_64-/}" ;;
+            mingw-w64-i686-*)   package="${package/mingw-w64-i686-/}" ;;
+            *)                  package="${package}:"
+        esac
+        echo "${package}"
+    done
+}
+
+refresh_databases() {
+    execute ${pacman} --sync --refresh || exit
+    status 'Updating package content databases'
+    execute pkgfile --update || exit
+
+    status 'Updating package name databases'
+    local repositories=()
+    for database in /var/lib/pacman/sync/*.db; do
+        database="${database##*/}"
+        repositories+=("${database%.db}")
+    done
+    for repository in "${repositories[@]}"; do
+        echo " Updating ${repository}"
+        packages "${repository}" | sort | uniq > /var/cache/pacboy/${repository}.packages
+    done
 }
 
 arguments=()
@@ -96,8 +125,8 @@ for argument in "${@}"; do
     fi
     case "${argument}" in
         sync)        command="${argument}"; raw_command="${pacman} --sync" ;;
-        update)      command="${argument}"; raw_command="${pacman} --sync --refresh --sysupgrade" ;;
-        refresh)     command="${argument}"; raw_command="${pacman} --sync --refresh" ;;
+        update)      command="${argument}"; raw_command="${pacman} --sync --sysupgrade" ;;
+        refresh)     command="${argument}"; raw_command='refresh_databases' ;;
         find)        command="${argument}"; raw_command="${pacman} --sync --search" ;;
         packages)    command="${argument}"; raw_command="${pacman} --sync --list" ;;
         files)       command="${argument}"; raw_command="${pacman} --query --list" ;;
@@ -139,9 +168,8 @@ for argument in "${arguments[@]}"; do
 done
 
 case "${command}" in
-    update|refresh) status 'Synchronizing pkgfile databases'
-                    execute pkgfile --update ;;
-    files)          exclude_lines='/$' ;;
+    update) refresh_databases ;;
+    files)  exclude_lines='/$' ;;
 esac
 test -z "${raw_command}" && raw_command="${pacman}"
 execute ${raw_command} "${raw_arguments[@]}"
