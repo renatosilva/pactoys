@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "${1}" = "${1:+help}" ]]; then echo "
-    Pacboy 2015.6.22
+    Pacboy 2015.6.24
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
@@ -64,7 +64,15 @@ status() {
         local white='\e[1;37m'
         local normal='\e[0m'
     fi
-    echo -e "${blue}::${white}" "${@}...${normal}" >&2
+    echo -e "${blue}::${white}" "${@}...${normal}"
+}
+
+execute() {
+    test -n "${debug}" && status Executing "${@}"
+    if [[ -z "${exclude_lines}" ]]
+        then "${@}"
+        else "${@}" | grep --invert-match "${exclude_lines}"
+    fi
 }
 
 arguments=()
@@ -130,13 +138,10 @@ for argument in "${arguments[@]}"; do
     unset repository
 done
 
-test -z "${raw_command}" && raw_command="${pacman}"
-raw_command=(${raw_command} "${raw_arguments[@]}")
-
 case "${command}" in
     update|refresh) status 'Synchronizing pkgfile databases'
-                    pkgfile --update
-                    test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" ;;
-    files)          test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" | grep --invert-match '/$' ;;
-    *)              test -n "${debug}" && status Executing "${raw_command[@]}"; "${raw_command[@]}" ;;
+                    execute pkgfile --update ;;
+    files)          exclude_lines='/$' ;;
 esac
+test -z "${raw_command}" && raw_command="${pacman}"
+execute ${raw_command} "${raw_arguments[@]}"
