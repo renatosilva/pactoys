@@ -1,37 +1,38 @@
 #!/bin/bash
 
-if [[ "${1}" = "${1:+help}" ]]; then echo "
+help_and_exit() {
+    echo "
     Pacboy 2015.6.26
     Copyright (C) 2015 Renato Silva
     Licensed under BSD
 
-This is a pacman wrapper for MSYS2 which handles the package prefixes
-automatically, and provides human-friendly commands for common tasks.
+    This is a pacman wrapper for MSYS2 which handles the package prefixes
+    automatically, and provides human-friendly commands for common tasks.
 
-Usage:
-    $(basename "$0") [command] [arguments]
-    Arguments will be passed to pacman or pkgfile after translation:
+    Usage:
+        $(basename "$0") [command] [arguments]
+        Arguments will be passed to pacman or pkgfile after translation:
 
-    For 64-bit MSYS2, name:i means i686-only
-    For 64-bit MSYS2, name:x means x86_64-only
-    For MSYS shell, name:m means mingw-w64
-    For all shells, name: disables any translation for name
-    For all shells, repository::name means repository/name
+        For 64-bit MSYS2, name:i means i686-only
+        For 64-bit MSYS2, name:x means x86_64-only
+        For MSYS shell, name:m means mingw-w64
+        For all shells, name: disables any translation for name
+        For all shells, repository::name means repository/name
 
-Commands:
-    sync        Shorthand for --sync or --upgrade
-    update      Shorthand for --sync --refresh --sysupgrade
-    refresh     Shorthand for --sync --refresh
-    find        Shorthand for --sync --search
-    packages    Shorthand for --sync --list
-    files       Shorthand for --query --list [--file]
-    info        Shorthand for --query --info [--file]
-    origin      Shorthand for --query --owns or pkgfile
-    remove      Shorthand for --remove --recursive
-    debug       Verbose output for the above commands.
-"
-exit 1
-fi
+    Commands:
+        sync        Shorthand for --sync or --upgrade
+        update      Shorthand for --sync --refresh --sysupgrade
+        refresh     Shorthand for --sync --refresh
+        find        Shorthand for --sync --search
+        packages    Shorthand for --sync --list
+        files       Shorthand for --query --list [--file]
+        info        Shorthand for --query --info [--file]
+        origin      Shorthand for --query --owns or pkgfile
+        remove      Shorthand for --remove --recursive
+        debug       Verbose output for the above commands.
+    "
+    exit 1
+}
 
 parse_mingw_argument() {
     [[ "${command}"  = sync     && -n "${file_argument}" ]] && { raw_argument=(${argument}); return; }
@@ -88,7 +89,9 @@ packages() {
 }
 
 refresh_databases() {
-    execute ${pacman} --sync --refresh || exit
+    execute ${pacman} --sync --refresh "${@}" || exit
+    test -n "${help_tip}" && exit
+
     status 'Updating package content databases'
     execute pkgfile --update || exit
 
@@ -113,12 +116,14 @@ case "${MSYSTEM}" in
     MINGW64) architecture='x86_64' ;;
     *)       architecture="${machine}"
 esac
+test -z "${1}" && help_and_exit
 
 for argument in "${@}"; do
-    if [[ "${argument}" = debug && -z "${debug}" ]]; then
-        debug='true'
-        continue
-    fi
+    case "${argument}" in
+        help)  help_and_exit ;;
+        debug) debug='true'
+               continue ;;
+    esac
     if [[ -n "${command}" ]]; then
         arguments+=("${argument}")
         continue
@@ -158,7 +163,7 @@ for argument in "${arguments[@]}"; do
      *:m) raw_argument=(mingw-w64-x86_64-${argument%:m} mingw-w64-i686-${argument%:m}) ;;
        *) parse_mingw_argument ;;
     esac
-    [[ "${argument}" =~ ^-h|--help$ ]] && echo "did you mean '$(basename "$0") help'?"
+    [[ $argument =~ ^(-h|-[^-].*h|--help$) ]] && help_tip='true'
     for raw_argument in "${raw_argument[@]}"; do
         [[ "${command}" =~ ^files|info|remove$ ]] && raw_argument=$(realname "${raw_argument}")
         raw_arguments+=("${repository}${raw_argument}")
@@ -168,8 +173,9 @@ for argument in "${arguments[@]}"; do
 done
 
 case "${command}" in
-    update) refresh_databases ;;
+    update) test -z "${help_tip}" && refresh_databases ;;
     files)  exclude_lines='/$' ;;
 esac
+test -n "${help_tip}" && echo "did you mean '$(basename "$0") help'?"
 test -z "${raw_command}" && raw_command="${pacman}"
 execute ${raw_command} "${raw_arguments[@]}"
