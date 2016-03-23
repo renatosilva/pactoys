@@ -25,7 +25,7 @@ tests=(repman::
          grep::"repman /etc/pacman.conf"
        repman::"list"
          grep::"repman /etc/pacman.conf"
-       repman::"add renatosilva http://renatosilva.me/msys2"
+       repman::"add renatosilva http://packages.renatosilva.net"
        repman::"list"
        pacman::"--sync --list renatosilva"
        repman::"remove renatosilva"
