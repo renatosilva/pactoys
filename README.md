@@ -3,7 +3,7 @@
 Pacboy is a pacman wrapper for MSYS2 which manages the package prefixes automatically and provides easy commands for common tasks. It also supports autocompletion of package and repository names.
 
 ```
-repman add renatosilva http://renatosilva.me/msys2
+repman add renatosilva http://packages.renatosilva.net
 pacman --sync pacboy
 ```
 
