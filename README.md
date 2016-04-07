@@ -51,5 +51,5 @@ pacboy origin /usr/bin/rsync.exe
 
 ## License and copyright
 
-Copyright (c) 2015 Renato Silva.
+Copyright (c) 2015, 2016 Renato Silva.
 Licensed under the terms of the [3-clause BSD license](LICENSE).

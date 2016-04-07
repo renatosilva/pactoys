@@ -2,8 +2,8 @@
 
 help_and_exit() {
     echo "
-    Pacboy 2015.6.26
-    Copyright (C) 2015 Renato Silva
+    Pacboy 2016.4.7
+    Copyright (C) 2015, 2016 Renato Silva
     Licensed under BSD
 
     This is a pacman wrapper for MSYS2 which handles the package prefixes
@@ -88,23 +88,56 @@ packages() {
     done
 }
 
+refresh_cache() {
+    local package="${1}"
+    local repositories=("${@:2}")
+    local repository
+    for file in /var/cache/${package}/*; do
+        test -e "${file}" || break
+        for repository in "${repositories[@]}"; do
+            [[ "${file}" =~ ^"/var/cache/${package}/${repository}." ]] && break
+            unset repository
+        done
+        test -z "${repository}" && rm "${file}"
+    done
+}
+
+refresh_database_checksum() {
+    local repository="${1}"
+    local checksum_file="/var/cache/pacboy/${repository}.checksum"
+    local updated_checksum=($(sha256sum "/var/lib/pacman/sync/${repository}.db"))
+    local current_checksum="$(cat "${checksum_file}" 2> /dev/null)"
+    echo "${updated_checksum}" > "${checksum_file}"
+    [[ "${current_checksum}" != "${updated_checksum}" ]]
+}
+
+refresh_package_names() {
+    local repositories=("${@}")
+    for repository in "${repositories[@]}"; do
+        if ! refresh_database_checksum "${repository}"
+            then echo " ${repository} is up to date"
+            else echo " updating ${repository}..."
+                 packages "${repository}" | sort | uniq > "/var/cache/pacboy/${repository}.packages"
+        fi
+    done
+}
+
 refresh_databases() {
     execute ${pacman} --sync --refresh "${@}" || exit
     test -n "${help_tip}" && exit
-
-    status 'Updating package content databases'
-    execute pkgfile --update || exit
-
-    status 'Updating package name databases'
     local repositories=()
     for database in /var/lib/pacman/sync/*.db; do
         database="${database##*/}"
         repositories+=("${database%.db}")
     done
-    for repository in "${repositories[@]}"; do
-        echo " Updating ${repository}"
-        packages "${repository}" | sort | uniq > /var/cache/pacboy/${repository}.packages
-    done
+
+    status 'Updating package content databases'
+    refresh_cache 'pkgfile' "${repositories[@]}"
+    execute pkgfile --update || exit
+
+    status 'Updating package name databases'
+    refresh_cache 'pacboy' "${repositories[@]}"
+    refresh_package_names "${repositories[@]}"
 }
 
 arguments=()
