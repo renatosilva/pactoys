@@ -16,5 +16,5 @@ repman list
 
 ## License and copyright
 
-Copyright (c) 2014 Renato Silva and others.
+Copyright (c) 2014, 2016 Renato Silva and others.
 Licensed under the terms of the [3-clause BSD license](LICENSE).

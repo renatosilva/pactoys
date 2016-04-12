@@ -2,8 +2,8 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 2015.2.28
-##     Copyright (c) 2014 Renato Silva
+##     Pacman Repository Manager 16.1
+##     Copyright (c) 2014, 2016 Renato Silva
 ##     Licensed under BSD
 ##
 ## This program manages pacman repositories. It uses a separate included file
@@ -15,6 +15,8 @@
 ##
 
 $0 = __FILE__
+require 'fileutils'
+require 'tempfile'
 require 'inifile'
 require 'easyoptions'
 if ARGV.empty?
@@ -54,7 +56,6 @@ end
 
 pacman_file = '/etc/pacman.conf'
 config_file = '/etc/pacman.d/repman.conf'
-pacman_refresh='pacman --sync --refresh'
 command, name, url = EasyOptions.arguments
 include_regex = /^\s*Include\s+=\s+#{config_file}/
 config = (IniFile.load(config_file) or IniFile.new(:filename => config_file).write)
@@ -72,14 +73,15 @@ end
 case command
 when 'add'
     EasyOptions.finish 'name and URL required' unless url
-    repository.save(config)
-    system(pacman_refresh)
+    temp_config = IniFile.new(:filename => Tempfile.new('repman').path)
+    repository.save(temp_config)
+    system("pacman --sync --refresh --config #{temp_config.filename}") and repository.save(config) or
+    EasyOptions.finish "could not add repository #{name}"
 when 'remove'
     EasyOptions.finish 'name is required' unless name
     repository = Repository.load(config, name)
-    EasyOptions.finish "could not find repository #{name}" unless repository
-    repository.remove(config)
-    system(pacman_refresh)
+    repository and FileUtils.rm_f("/var/lib/pacman/sync/#{name}.db") and repository.remove(config) or
+    EasyOptions.finish "could not remove repository #{name}"
 when 'list' then
     EasyOptions.finish "extra arguments to #{command} command" if EasyOptions.arguments[1]
     Repository.all(config).each do |repository|

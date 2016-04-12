@@ -14,7 +14,7 @@ fi
 config="/etc/pacman.d/repman.conf"
 if [[ -e $config ]]; then
     mv $config $config.bak
-    trap "mv $config.bak $config" EXIT
+    trap "mv $config.bak $config; pacman --sync --refresh" EXIT
 fi
 if [[ -t 1 || "$colored" = colored ]]; then
     green_color="\e[0;32m"
@@ -30,6 +30,7 @@ tests=(repman::
        pacman::"--sync --list renatosilva"
        repman::"remove renatosilva"
        repman::"list"
+           ls::"-1 /var/lib/pacman/sync"
        repman::"add"
        repman::"add renatosilva"
        repman::"remove renatosilva"

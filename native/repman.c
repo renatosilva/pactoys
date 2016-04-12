@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Renato Silva <br.renatosilva@gmail.com>
+ * Copyright (c) 2014, 2016 Renato Silva <br.renatosilva@gmail.com>
  * Copyright (c) 2014 David Macek <david.macek.0@gmail.com>
  */
 
@@ -9,12 +9,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 #include <ini.h>
 
 #define NAME         "Pacman Repository Manager"
-#define COPYRIGHT    "Copyright (C) 2014 Renato Silva and others"
+#define COPYRIGHT    "Copyright (C) 2014, 2016 Renato Silva and others"
 #define LICENSE      "Licensed under BSD"
-#define VERSION      "2015.3.1"
+#define VERSION      "16.1"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \
@@ -62,35 +63,60 @@ static int parse_repositories(void* data, const char* section, const char* name,
     return true;
 }
 
+static void write_repository(simple_repository repository, FILE* ini) {
+    if (repository.remove)
+        return;
+    fprintf(ini, "[%s]\n", repository.name);
+    fprintf(ini, "Server = %s\n", repository.url);
+    fprintf(ini, "SigLevel = %s\n", repository.siglevel);
+    fprintf(ini, "\n");
+}
+
 static bool write_repositories() {
     FILE* ini = fopen(CONFIG_FILE, "w");
     if (ini == NULL)
         return false;
     for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
-        if (!repositories[repo_index].remove) {
-            fprintf(ini, "[%s]\n", repositories[repo_index].name);
-            fprintf(ini, "Server = %s\n", repositories[repo_index].url);
-            fprintf(ini, "SigLevel = %s\n", repositories[repo_index].siglevel);
-            fprintf(ini, "\n");
-        }
+        write_repository(repositories[repo_index], ini);
     fclose(ini);
     return true;
 }
 
-static void add_repository(const char* name, const char* url, const char* siglevel) {
+static bool pacman_refresh(simple_repository repository) {
+    char temp_ini_path[] = "/tmp/repman.XXXXXX";
+    char command[256];
+    int pacman_return_code;
+    int temp_descriptor;
+    FILE* temp_ini;
+    if ((temp_descriptor = mkstemp(temp_ini_path)) == -1)
+        return false;
+    if ((temp_ini = fdopen(temp_descriptor, "w")) == NULL)
+        return false;
+    write_repository(repository, temp_ini);
+    snprintf(command, sizeof(command), "pacman --sync --refresh --config %s", temp_ini_path);
+    fclose(temp_ini);
+    pacman_return_code = system(command);
+    remove(temp_ini_path);
+    return (pacman_return_code == 0);
+}
+
+static bool add_repository(const char* name, const char* url, const char* siglevel) {
     for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
         if (0 == strcmp(name, repositories[repo_index].name))
             break;
     repositories[repo_index].name = strdup(name);
     repositories[repo_index].url = strdup(url);
     repositories[repo_index].siglevel = strdup(siglevel);
+    return pacman_refresh(repositories[repo_index]);
 }
 
 static bool remove_repository(const char* name) {
+    char database[1024];
     for (repo_index = 0; repo_index < MAX_REPOSITORIES && repositories[repo_index].name != NULL; repo_index++)
         if (0 == strcmp(name, repositories[repo_index].name)) {
             repositories[repo_index].remove = true;
-            return true;
+            snprintf(database, sizeof(database), "/var/lib/pacman/sync/%s.db", name);
+            return (access(database, F_OK) != 0) || (remove(database) == 0);
         }
     return false;
 }
@@ -103,12 +129,7 @@ static void list_repositories() {
             repositories[repo_index].siglevel);
 }
 
-static int pacman_refresh() {
-    return system("pacman --sync --refresh");
-}
-
 int main(int argc, char** argv) {
-    int pacman_return_code;
     repo_index = 0;
     if (argc < 2) {
         printf(HELP);
@@ -149,14 +170,17 @@ int main(int argc, char** argv) {
             printf("Please specify the repository name and URL.\n");
             return EXIT_FAILURE;
         }
-        add_repository(argv[2], argv[3], "Optional");
+        if (!add_repository(argv[2], argv[3], "Optional")) {
+            printf("Could not add repository %s.\n", argv[2]);
+            return EXIT_FAILURE;
+        }
     } else if (strcmp(argv[1], "remove") == 0) {
         if (argc < 3) {
             printf("Please specify the repository to remove.\n");
             return EXIT_FAILURE;
         }
         if (!remove_repository(argv[2])) {
-            printf("Could not find repository %s.\n", argv[2]);
+            printf("Could not remove repository %s.\n", argv[2]);
             return EXIT_FAILURE;
         }
     } else {
@@ -164,13 +188,10 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    /* Save and refresh */
+    /* Save repositories */
     if (!write_repositories()) {
         printf("Could not write %s.\n", CONFIG_FILE);
         return EXIT_FAILURE;
     }
-    pacman_return_code = pacman_refresh();
-    if (pacman_return_code == -1)
-        return EXIT_FAILURE;
-    return pacman_return_code;
+    return EXIT_SUCCESS;
 }
