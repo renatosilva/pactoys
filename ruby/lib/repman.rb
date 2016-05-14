@@ -7,7 +7,7 @@
 ##     Licensed under BSD
 ##
 ## This program manages pacman repositories. It uses a separate included file
-## /etc/pacman.d/pacrep.conf instead of /etc/pacman.conf. Usage:
+## /etc/pacman.d/repman.conf instead of /etc/pacman.conf. Usage:
 ##
 ##     repman add NAME URL  Add a repository and refresh database.
 ##     repman remove NAME   Remove a repository and refresh database.
