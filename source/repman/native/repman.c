@@ -15,7 +15,7 @@
 #define NAME         "Pacman Repository Manager"
 #define COPYRIGHT    "Copyright (C) 2014, 2016 Renato Silva and others"
 #define LICENSE      "Licensed under BSD"
-#define VERSION      "16.1"
+#define VERSION      "16.2"
 
 #define HELP         "\n\t" NAME " " VERSION "\n\t" COPYRIGHT "\n\t" LICENSE "\n\nUsage:\n" \
                      "\trepman add NAME URL\n" \
@@ -93,7 +93,7 @@ static bool pacman_refresh(simple_repository repository) {
     if ((temp_ini = fdopen(temp_descriptor, "w")) == NULL)
         return false;
     write_repository(repository, temp_ini);
-    snprintf(command, sizeof(command), "pacman --sync --refresh --config %s", temp_ini_path);
+    snprintf(command, sizeof(command), "pacman --noprogressbar --sync --refresh --config %s", temp_ini_path);
     fclose(temp_ini);
     pacman_return_code = system(command);
     remove(temp_ini_path);

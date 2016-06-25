@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
     spec.name                      = 'repman'
-    spec.version                   = '16.1.0'
+    spec.version                   = '16.2.0'
     spec.license                   = 'BSD'
     spec.author                    = 'Renato Silva'
     spec.email                     = 'br.renatosilva@gmail.com'

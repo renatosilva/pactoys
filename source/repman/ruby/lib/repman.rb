@@ -2,7 +2,7 @@
 # Encoding: UTF-8
 
 ##
-##     Pacman Repository Manager 16.1
+##     Pacman Repository Manager 16.2
 ##     Copyright (c) 2014, 2016 Renato Silva
 ##     Licensed under BSD
 ##
@@ -75,7 +75,7 @@ when 'add'
     EasyOptions.finish 'name and URL required' unless url
     temp_config = IniFile.new(:filename => Tempfile.new('repman').path)
     repository.save(temp_config)
-    system("pacman --sync --refresh --config #{temp_config.filename}") and repository.save(config) or
+    system("pacman --noprogressbar --sync --refresh --config #{temp_config.filename}") and repository.save(config) or
     EasyOptions.finish "could not add repository #{name}"
 when 'remove'
     EasyOptions.finish 'name is required' unless name
