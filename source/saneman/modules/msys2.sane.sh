@@ -4,6 +4,8 @@
 
 module[description]='MSYS2 packages module'
 
+problems[deprecated:md5sums]='failure'
+problems[deprecated:sha1sums]='failure'
 problems[unformatted:pkgdesc]='message'
 problems[unrecognized:depends]='warning'
 
