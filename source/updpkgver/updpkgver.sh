@@ -18,6 +18,7 @@ usage() { tee <<done-usage
     --reset           Remove pending updates
     --status          List pending updates
     --versioned       Include versioned names in update
+    --large           Search large versions
 
     --color           Force enabling colors
     --no-color        Force disabling colors
@@ -48,6 +49,7 @@ read_arguments() {
             --reset)       option_reset='true'             ;;
             --status)      option_status='true'            ;;
             --versioned)   option_versioned='true'         ;;
+            --large)       option_large='true'             ;;
             --verbose)     option_verbose='true'           ;;
             -*)            usage                           ;;
              *)            directories+=("${element//\\/\/}")
@@ -300,7 +302,7 @@ detect_version() {
     [[ "${name}"     =~ .*-(git|hg|bzr|svn|cvs)$                      ]] && return 2
     [[ "${realname}" =~ .*[0-9].* && -z "${option_versioned}"         ]] && return 3
     [[ "${pkgver}"   =~ ^([0-9]|[1-9][0-9]+)(\.([0-9]|[1-9][0-9]+))*$ ]] || return 4
-    [[ "${pkgver}"   =~ ^[0-9]{1,2}(\.[0-9]{1,2})*$                   ]] || return 5
+    ( [[ -n "${option_large}" ]] || [[ "${pkgver}" =~ ^[0-9]{1,2}(\.[0-9]{1,2})*$ ]] ) || return 5
     ! find_pattern "${directory}" "${excludes[@]}"
 }
 
